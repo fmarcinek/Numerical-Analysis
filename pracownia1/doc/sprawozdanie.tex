@@ -1,0 +1,287 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[OT4,plmath]{polski}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{epstopdf}
+\usepackage{amsmath,amssymb,amsfonts,amsthm,mathtools}
+\usepackage{bbm}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{comment}
+
+\newtheorem{lemat}{Lemat}
+\newtheorem{wniosek}{Wniosek}
+\newtheorem{fakt}{Fakt}
+\newtheorem{tw}{Twierdzenie}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\date{Wrocław, \today}
+\title{\textbf{Efektywne obliczanie sumy szeregu\\ \vspace{2mm} $\displaystyle\sum_{k=1}^{\infty}$ $\frac{(-1)^{k+1}}{k^2+1}$ 
+		    wraz z uogólnieniem \\ na szeregi postaci $\displaystyle\sum_{k=1}^{\infty}$ $\frac{(-1)^{k+1}}{k^n+1}$}
+		    \\ \vspace{3mm} Sprawozdanie do zadania P.1.12}
+\author{Filip Marcinek 282905}
+
+\begin{document}
+\maketitle
+
+\section{Wstęp} 
+\indent\hspace{5mm} Zadanie polega na wyznaczeniu wartości sumy szeregu naprzemiennego $\sum_{k=1}^{\infty}$ $\frac{(-1)^{k+1}}{k^2+1}$
+z dokładnością do 10 i 16 cyfr ułamkowych dziesiętnych za pomocą sum częściowych tego szeregu, a także na zauważeniu pewnych zależności arytmetycznych pozwalających
+nam przyspieszyć wyznaczanie przybliżonej sumy tego szeregu. W dalszej części zadania uogólnię efektywniejszy sposób (stosujący wspomniane zależności) na obliczanie sumy szeregu dla szeregów postaci $\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^n+1}$ dla $n = (2,4,6,8\dots )$.\\
+\indent Dla ułatwienia zapisu przyjmiemy oznaczenie $S_n := \sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^n+1}$, w szczególności
+$S_2 := \sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2+1}$.
+
+\indent Wszystkie obliczenia wykonane zostały przy użyciu języka programowania \textbf{Julia} w wersji \textbf{0.6.0} na standardowych 64-bitowych zmiennopozycyjnych liczbach maszynowych.
+
+\indent Kod źródłowy, który został użyty do obliczeń w pliku o rozszerzeniu \verb+.ipynb+, znajduje się w pliku o rozszerzeniu \verb+.jl+.
+
+
+\section{Wyznaczenie przybliżonej sumy szeregu $S_2$}
+\subsection{Wniosek z kryterium Leibniza}
+\indent\hspace{4mm} Moim zadaniem będzie wyznaczenie wartości nieskończonej sumy szeregu $S_2$ z dokładnością do 10 i 16 cyfr ułamkowych dziesiętnych.
+Na początek podam prosty fakt będący wnioskiem z kryterium Leibniza dla szeregów naprzemiennych, który istotnie ułatwi obliczenia:
+\begin{fakt}
+ Dla szeregu naprzemiennego $L := \sum_{k=1}^{\infty}(-1)^{k+1} a_k$ spełniającego warunki kryterium Leibniza błąd bezwzględny przybliżenia wartości 
+ jego nieskończonej sumy przez $n$-tą sumę częściową
+ jest opisany następującą zależnością: 
+ \begin{equation}
+  |L - L_n| \leqslant a_{n+1}.
+ \end{equation}
+\end{fakt}
+
+\begin{proof}
+Dowód pomijamy, ponieważ jest prosty i ogólnie dostępny \cite{leibniz}. 
+\end{proof}
+
+\begin{wniosek}
+\indent Zauważmy, że nierówność (1) z Faktu 1. daje nam możliwość łatwego sprawdzenia, ile elementów szeregu $S_{2}$ trzeba wysumować,
+aby otrzymać zadaną dokładność wyniku. \\
+\indent Niech $\varepsilon$ oznacza pożądaną przez nas dokładność, zaś $L$ -- szereg, którego sumę wyznaczamy.
+Chcemy znaleźć $n$ takie, że $|L - L_n| \leqslant \varepsilon$.
+Zatem -- korzystając z nierówności (1) -- otrzymujemy nierówność $|L - L_n| \leqslant a_{n+1} \leqslant \varepsilon$, z której w oczywisty sposób wynika,
+że wystarczy nam znaleźć $n$, dla którego zachodzi $ a_{n+1} \leqslant \varepsilon $. Fakt 1. gwarantuje nam wtedy, że suma częściowa $L_n$
+będzie przybliżać wartość sumy $L$ z dokładnością $\leqslant \varepsilon$.
+\end{wniosek}
+
+\subsection{Obliczanie sumy $S_2$ za pomocą sum częściowych}
+\indent\hspace{4mm}Zgodnie z definicją cyfr dokładnych dziesiętnych ułamkowych\cite{cyfry} dla pewnego przybliżenia $\overset{\sim}{S}$ warunkami wystarczającymi dla uzyskania 10 i 16 cyfr dokładnych
+jest spełnienie nierówności odpowiednio: $|S_2 - \overset{\sim}{S}| \leqslant \frac{1}{2}\cdot 10^{-10} $ oraz $|S_2 - \overset{\sim}{S}| \leqslant \frac{1}{2}\cdot 10^{-16} $.
+Zatem z Wniosku z Faktu 1. wystarczy znaleźć $a_{k+1}$ takie, że $a_{k+1} \leqslant \frac{1}{2}\cdot 10^{-10}$ (oraz odpowiednio $\frac{1}{2}\cdot 10^{-16}$), a wtedy $k$-ta suma
+częściowa $S_2$ jest szukanym przybliżeniem $\overset{\sim}{S}$.
+\\
+"Liczba kroków" oznacza, ile kroków będzie musiał wykonać algorytm sumowania elementów szeregu, żeby otrzymać odpowiednią dokładność.\\
+\\
+Liczba kroków dla 10 cyfr dokładnych $S_n$: 141421. 	Wartość sumy $S_n$: 0.3639854725.	Błąd bezwzględny: 2.499995e-11.\\
+Liczba kroków dla 16 cyfr dkoładnych $S_n$: 141421356.	Wartość sumy $S_n$: 0.3639854725089334.	Błąd bezwzględny: 5.551115e-17.\\
+\clearpage
+\begin{table}[h]
+	\centering
+	\begin{tabular}{|c|c|} \hline
+		n-ta suma częściowa & błąd bezwzględny ($a_{n+1}$) \\ \hline
+		10000 &  9.998000e-09\\
+		20000 &  1.111037e-09\\
+		30000 &  6.249688e-10\\
+		40000 &  3.999840e-10\\
+		50000 &  2.777685e-10\\
+		\vdots & \vdots \\
+		110000  &  8.264313e-11 \\
+		120000 &  6.944329e-11 \\
+		130000 & 5.917069e-11\\
+		141421 & 4.999954e-11\\
+		\vdots & \vdots \\
+		\vdots & \vdots \\
+		141421356 & 5.000000e-17\\
+		\hline
+	\end{tabular}
+	\caption{Błędy bezwzględne przy obliczaniu kolejnych sum częściowych szeregu $S_2$.}
+\end{table}
+
+
+\subsection{Zależności przyspieszające obliczenia}
+
+Można znacznie przyspieszyć obliczanie sumy $S_n$, wykorzystując arytmetyczne zależności, które udowodnię poniżej oraz przedstawię
+ich zastosowanie do zagadnienia z zadania.\\
+Będę korzystać z następującego wzoru\cite{bernoulli}:
+\begin{align}
+  \displaystyle\sum_{n=1}^{\infty}\frac{(-1)^{n+1}}{n^{2k}} &= (-1)^{k+1}\frac{\pi^{2k}(2^{2k-1}-1)}{(2k)!}B_{2k},
+  & \intertext{gdzie $B_{2k}$ to $2k$-ta liczba Bernoulliego \cite{bernoulli}.}
+  \notag
+\end{align}
+
+\begin{fakt}
+Zauważmy, że zachodzi następująca zależność:
+\begin{equation}
+ \frac{\pi^{2}}{12} - S_{2} = \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)}.
+\end{equation}
+\end{fakt}
+
+\begin{proof}
+Wykonujemy proste przekształcenia szeregów:
+\begin{align*}
+  S_{2} &+ \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)} =
+  \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2+1} + \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)} = \\
+  &= \displaystyle\sum_{k=1}^{\infty}\left(\frac{(-1)^{k+1}}{k^2+1}\cdot\left(1 + \frac{1}{k^{2}}\right)\right) = \\ &= 
+   \displaystyle\sum_{k=1}^{\infty}\left(\frac{(-1)^{k+1}}{k^2+1}\cdot\frac{k^{2}+1}{k^{2}}\right) =
+  \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2}.
+  \intertext{Korzystając ze wzoru (2) dla $n = 1$ mamy:}
+  \notag
+  &\hspace{2cm} S_{2} + \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)} = \frac{\pi^2}{12}.
+  \intertext{Skąd natychmiast wynika (3).}
+\end{align*}
+\end{proof}
+
+Czy teraz poprawny wynik zostanie uzyskany mniejszą liczbą kroków algorytmu sumowania szeregu? Tym razem liczone są sumy częściowe szeregu
+$\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)}$.\\
+
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{|c|c|} \hline
+		n-ta suma częściowa & błąd bezwzględny ($a_{n+1}$) \\ \hline
+		100 &  9.608861e-09\\
+		141 &  2.459377e-09\\
+		173 &  1.090909e-09\\
+		200 &  6.126395e-10\\
+		223 &  3.971909e-10\\
+		\vdots & \vdots \\
+		331  &  8.230832e-11 \\
+		346 &  6.897290e-11 \\
+		360 & 5.888001e-11\\
+		376 & 4.950300e-11\\
+		\vdots & \vdots \\
+		\vdots & \vdots \\
+		11892 & 4.998438e-17\\
+		\hline
+	\end{tabular}
+	\caption{Błędy bezwzględne przy obliczaniu kolejnych sum częściowych szeregu $\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)}$}
+\end{table}
+
+Liczba kroków dla 10 cyfr dokładnych: 376.	Wartość sumy $S_n$: 0.3639854725.	Błąd bezwzględny: 2.488287e-11.\\
+Liczba kroków dla 16 cyfr dokładnych: 11892.	Wartość sumy $S_n$: 0.3639854725089334.	Błąd bezwzględny: 0.000000e+00.\\
+Widzimy więc, że szybkość obliczeń znacznie się zwiększyła.\\
+
+\begin{fakt}
+Możemy udowodnić następującą zależność:
+\begin{equation}
+ S_{2} - \frac{\pi^{2}}{12} + \frac{7\pi^{4}}{720} = \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^4(k^2+1)}.
+\end{equation}
+\end{fakt}
+
+\begin{proof}
+Z Faktu 1. wiemy, że \hspace{2mm} $ \displaystyle {S_{2} - \frac{\pi^{2}}{12}} = - \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)} $.
+\\ Zatem:
+\begin{align*}
+  & \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2+1} + \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)}
+  = \displaystyle\sum_{k=1}^{\infty}\left(\frac{(-1)^{k+1}}{k^2(k^2+1)}\cdot\left(1 + \frac{1}{k^{2}}\right)\right) = \\ &= 
+   \displaystyle\sum_{k=1}^{\infty}\left(\frac{(-1)^{k+1}}{k^2(k^2+1)}\cdot\frac{k^{2}+1}{k^{2}}\right) =
+  \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^4}.
+  \intertext{Korzystając ze wzoru (2) dla $n = 2$ otrzymujemy:}
+  \notag
+  &\hspace{2cm} \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)} + \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^4(k^2+1)} = \frac{7\pi^{4}}{720},
+  \intertext{a stosując podstawienie z Faktu 2. i odejmowanie stronami mamy (4).}
+\end{align*}
+\end{proof}
+
+Czy liczbę kroków sumowania można jeszcze zmniejszyć? Zobaczmy, ile kroków potrzeba, by uzyskać dokładny wynik, licząc częściowe
+sumy szeregu $\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^2(k^2+1)}$.\\
+\\
+Liczba kroków dla 10 cyfr dokładnych: 52.	Wartość sumy $S_n$: 0.3639854725.	Błąd bezwzględny: 2.382478e-11.\\
+Liczba kroków dla 16 cyfr dokładnych: 521.	Wartość sumy $S_n$: 0.3639854725089336.	Błąd bezwzględny: 1.665335e-16.\\
+\clearpage
+\begin{table}[h]
+	\centering
+	\begin{tabular}{|c|c|} \hline
+		n-ta suma częściowa & błąd bezwzględny ($a_{n+1}$) \\ \hline
+		10 &  5.598471e-07\\
+		20 &  1.163324e-08\\
+		30 &  1.125585e-09\\
+		40 &  2.103965e-10\\
+		50 & 5.680833e-11\\
+		52 & 4.510142e-11\\
+		\vdots & \vdots \\
+		521 & 4.942827e-17\\
+		\hline
+	\end{tabular}
+	\caption{Błędy bezwzględne przy obliczaniu kolejnych sum częściowych szeregu $\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^4(k^2+1)}$}
+\end{table}
+
+
+\section{Uogólnienie}
+Postaram się uogólnić efektywny sposób wyznaczania sumy $S_2$
+na szeregi postaci $S_n$ oraz (być może) przyspieszyć obliczanie sumy $S_2$.
+
+Niech $\displaystyle{K_{(n,m)}} = \sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{n\cdot m}(k^n+1)}$.
+Na początek uogólnię zależność, którą można zauważyć dla szeregu $S_2$ w Faktach 2. i 3.:
+\begin{lemat}
+$K_{(n,m-1)} + K_{(n,m)} = \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{n\cdot m}}$ dla $n,m \in$ $\mathbbm{N}^{+}$.
+\end{lemat}
+
+\begin{proof}
+Ustalmy $n$ i $m$.
+Wykonujemy proste przekształcenia szeregów:
+\begin{align*}
+  K_{(n,m-1)} + K_{(n,m)} &=
+  \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{n(m-1)}(k^n+1)} + \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{n \cdot m}(k^n+1)} =\\
+   &= \displaystyle\sum_{k=1}^{\infty}\left(\frac{(-1)^{k+1}}{k^{n(m-1)}(k^n+1)}\cdot\left(1 + \frac{1}{k^n}\right)\right) = \\ &= 
+    \displaystyle\sum_{k=1}^{\infty}\left(\frac{(-1)^{k+1}}{k^{n(m-1)}(k^n+1)}\cdot\frac{k^{n}+1}{k^n}\right) =
+    \\ &= \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{n(m-1)}}\cdot \frac{1}{k^{n}} =
+   \displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{n\cdot m}}.
+\end{align*}
+\end{proof}
+
+\clearpage
+
+\begin{tw}
+\begin{equation}
+S_{n} = \displaystyle\sum_{j=1}^{m}\left(-1\right)^{j+1}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{j\cdot n}} + (-1)^{m} \cdot K_{(n,m)}.
+\end{equation}
+\end{tw}
+
+\begin{proof}
+Zauważmy, że $K_{(n,0)} = S_{n}$. Dla dowodu wystarczy zatem pokazać, że $$K_{(n,0)} = 
+\displaystyle\sum_{j=1}^{m}\left(-1\right)^{j+1}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{j\cdot n}} + (-1)^{m} \cdot K_{(n,m)}.$$
+Ustalmy $n \in \mathbbm{N}$.
+Indukcja po m.\\
+\begin{itemize}
+\item $m = 0$:
+$$ (-1)^0 \cdot K_{(n,0)} = K_{(n,0)}.$$
+\item Załóżmy, że równość (5) zachodzi dla wszystkich $l<m$. Pokażemy, że w takim razie równość (5) jest spełniona dla m.
+\begin{align*}
+ & \displaystyle\sum_{j=1}^{m}\left(-1\right)^{j+1}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{j\cdot n}} + (-1)^{m} \cdot K_{(n,m)} =
+ \displaystyle\sum_{j=1}^{m-1}\left(-1\right)^{j+1}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{j\cdot n}} + \\ &+
+ \left(-1\right)^{m+1}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{m\cdot n}} + (-1)^{m+1}\cdot K_{(n,m-1)} - (-1)^{m-1}\cdot K_{(n,m-1)} + \\
+ &+ (-1)^{m}\cdot K_{(n,m)} \stackrel{\tiny{ind.}}{=} K_{(n,0)} + (-1)^{m+1}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{m\cdot n}}
+ + (-1)^{m}\cdot K_{(n,m-1)} + \\ &+ (-1)^{m}\cdot K_{(n,m)} \stackrel{\tiny{z\ lematu\ 1.}}{=} 
+ K_{(n,0)} + (-1)^{m+1}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{m\cdot n}} + (-1)^{m}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{m\cdot n}} = \\
+ &= K_{(n,0)} - (-1)^{m}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{m\cdot n}} + (-1)^{m}\displaystyle\sum_{k=1}^{\infty}\frac{(-1)^{k+1}}{k^{m\cdot n}} = K_{(n,0)}.
+\end{align*}
+\end{itemize}
+\end{proof}
+
+\clearpage
+
+\section{Wnioski}
+\indent\hspace{4mm} Po rozważeniu trzech metod obliczania wartości sumy szeregu $S_2$ stwierdzam, iż każda kolejna metoda była coraz szybsza. Zauważyłem, że druga metoda (z wykorzystaniem równości (3))
+była kwadratowo szybsza od pierwszej (która była zwykłym sumowaniem szeregu $S_n$) oraz zwróciła dokładniejsze wyniki. Trzecia metoda (z wykorzystaniem równości (4))
+była natomiast szybsza niż druga, ale wyniki były mniej dokładne.\\
+\indent Przyspieszanie metody obliczania sumy szeregu $S_n$ polegało na zamianie $S_n$ na sumę stałej oraz sszeregu, którego sumy częściowe zbiegały szybciej do sumy nieskończonej szeregu. Jak mogliśmy zauważyć, skorzystanie z tego faktu znacznie przyspieszyło obliczenia (nie wpływając wcale lub w bardzo małym stopniu na poprawność wyników). \\
+\indent Uogólniłem także metodę na szeregi $S_n$. Dla coraz większych $n$ zauważamy coraz mniejszą różnicę pomiędzy zwykłym sumowaniem szeregu $S_n$ a zastosowaniem zaproponowanej przeze mnie efektywnej metody, ponieważ im większe $n$, tym szybciej sumy szeregu postaci $S_n$ zbiegają do sumy nieskończonej.
+
+
+\begin{thebibliography}{3}
+	\itemsep2pt
+	
+	\bibitem{leibniz} \url{https://en.wikipedia.org/wiki/Alternating_series_test}
+	(ostatni dostęp \today)
+	\bibitem{cyfry} \url{https://skos.ii.uni.wroc.pl/mod/resource/view.php?id=4061}
+	(ostatni dostęp \today)
+	\bibitem{bernoulli} \url{https://en.wikipedia.org/wiki/Bernoulli_number}
+	(ostatni dostęp \today)
+
+\end{thebibliography}
+
+\end{document}
